@@ -47,6 +47,20 @@ def save_state(post) -> None:
     (post.dir / "state.json").write_text(json.dumps(post.state, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
+def check_token(token: str) -> bool:
+    """토큰으로 내 계정을 조회해 본다. 점검 모드에서 큐가 비어 있어도 실행한다."""
+    if not token:
+        summary("- Threads 토큰 없음(THREADS_ACCESS_TOKEN 시크릿을 등록할 것)")
+        return False
+    try:
+        me = Threads(token).me()
+    except ThreadsError as e:
+        summary(f"- Threads 토큰 실패: {e}")
+        return False
+    summary(f"- Threads 토큰 OK: @{me.get('username')}")
+    return True
+
+
 def archive(post) -> None:
     POSTED.mkdir(exist_ok=True)
     record = dict(post.data)
@@ -65,8 +79,11 @@ def main() -> None:
 
     posts = load_queue()
     ready = [p for p in posts if p.approved]
+    token = os.environ.get("THREADS_ACCESS_TOKEN", "")
     if not ready:
         summary(f"게시할 글이 없다(큐 {len(posts)}편, 승인된 글 0편). 오늘은 건너뛴다.")
+        if a.dry_run:
+            sys.exit(0 if check_token(token) else 1)
         return
 
     post = ready[0]
@@ -79,7 +96,6 @@ def main() -> None:
     if not a.repo or not a.ref:
         sys.exit("--repo / --ref 가 필요하다(Actions 에서는 자동으로 채워진다).")
     urls = image_urls(post, a.repo, a.ref)
-    token = os.environ.get("THREADS_ACCESS_TOKEN", "")
 
     summary(f"오늘의 글: {post.label()} / 사진 {len(urls)}장 / 남은 승인 글 {len(ready) - 1}편")
 
@@ -94,17 +110,9 @@ def main() -> None:
                 good, ctype = False, str(e)
             ok &= good
             summary(f"- 사진 {'OK' if good else '실패'}: {u.rsplit('/', 1)[-1]} ({ctype})")
-        if token:
-            try:
-                me = Threads(token).me()
-                summary(f"- Threads 토큰 OK: @{me.get('username')}")
-            except ThreadsError as e:
-                ok = False
-                summary(f"- Threads 토큰 실패: {e}")
-        else:
-            summary("- Threads 토큰 없음(THREADS_ACCESS_TOKEN 시크릿을 등록할 것)")
-        summary("점검 통과" if ok and token else "점검에서 문제가 나왔다")
-        sys.exit(0 if ok and token else 1)
+        ok &= check_token(token)
+        summary("점검 통과" if ok else "점검에서 문제가 나왔다")
+        sys.exit(0 if ok else 1)
 
     api = Threads(token)
     try:
