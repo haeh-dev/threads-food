@@ -164,6 +164,11 @@ class Threads:
         """게시물에 달린 답글. threads_read_replies 권한이 필요하다."""
         return self._call("GET", f"{media_id}/replies", fields="id,text,username").get("data", [])
 
+    def my_replies(self, limit: int = 50) -> list[dict]:
+        """내가 단 답글 목록(최신순). 글의 replies 목록에 내 답글이 안 나올 때 쓴다."""
+        return self._call("GET", f"{self.user_id}/replies", limit=str(limit),
+                          fields="id,text,username,timestamp,replied_to,root_post").get("data", [])
+
     def delete(self, media_id: str) -> None:
         """내 게시물·답글을 지운다. threads_delete 권한이 필요하고 되돌릴 수 없다."""
         self._call("DELETE", media_id)
