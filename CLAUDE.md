@@ -21,6 +21,9 @@ python scripts/prepare_photos.py [--env-file <KAKAO_REST_KEY 가 든 .env>] scan
 python scripts/prepare_photos.py build --group N [--pick 3,1,2]
 ```
 `queue/NNNN/` 에 사진과 `post.json` 뼈대가 생긴다. 사진은 최대 10장, 첫 장이 대표 사진이다.
+- 사진 정가운데에 `norang_ribbon` 워터마크가 옅게 들어간다(사용자 지시 2026-11-25, 눈에 잘 안 띄게).
+  빼려면 `--no-watermark`. 진하기는 `WATERMARK_ALPHA`, 크기는 `WATERMARK_SCALE`.
+- 사진 파일은 저장소 폴더 맨 위에 두면 된다(`/*.heic`, `/*.jpg` 등은 무시 목록이라 커밋되지 않는다).
 
 ## 4. 쿠팡 링크
 ```

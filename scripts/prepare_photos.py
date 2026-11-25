@@ -30,7 +30,7 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
-from PIL import Image, ImageOps
+from PIL import Image, ImageDraw, ImageFont, ImageOps
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from queue_lib import QUEUE, ROOT, next_id  # noqa: E402
@@ -49,6 +49,18 @@ MAX_WIDTH = 1440
 QUALITY = 85
 MAX_PHOTOS = 10
 KAKAO = "https://dapi.kakao.com/v2/local"
+
+# 워터마크 — 사용자 지시(2026-11-25): 계정 이름을 눈에 잘 안 띄게 사진 정가운데에.
+WATERMARK = "norang_ribbon"
+WATERMARK_ALPHA = 70        # 0~255. 낮을수록 흐리다
+WATERMARK_SCALE = 0.045     # 글자 크기 = 사진 너비 × 이 값
+FONT_CANDIDATES = [
+    os.environ.get("WATERMARK_FONT", ""),
+    "C:/Windows/Fonts/segoeui.ttf",
+    "C:/Windows/Fonts/arial.ttf",
+    "/System/Library/Fonts/Helvetica.ttc",
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+]
 
 
 # ── 환경 ────────────────────────────────────────────────────
@@ -202,13 +214,35 @@ def cmd_scan(a) -> None:
     print(f"\n{len(out)}묶음 → {SCAN_FILE.relative_to(ROOT)}")
 
 
-def convert(src: Path, dst: Path) -> tuple[int, int, int]:
+def _font(size: int):
+    for path in FONT_CANDIDATES:
+        if path and Path(path).exists():
+            return ImageFont.truetype(path, size)
+    return ImageFont.load_default(size=size)
+
+
+def add_watermark(im: Image.Image, text: str) -> Image.Image:
+    """사진 정가운데에 반투명 글씨를 얹는다. 밝은 배경에서도 보이게 아주 옅은 테두리를 둘렀다."""
+    w, h = im.size
+    size = max(18, round(w * WATERMARK_SCALE))
+    layer = Image.new("RGBA", im.size, (0, 0, 0, 0))
+    ImageDraw.Draw(layer).text(
+        (w / 2, h / 2), text, font=_font(size), anchor="mm",
+        fill=(255, 255, 255, WATERMARK_ALPHA),
+        stroke_width=max(1, size // 30), stroke_fill=(0, 0, 0, WATERMARK_ALPHA // 2),
+    )
+    return Image.alpha_composite(im.convert("RGBA"), layer).convert("RGB")
+
+
+def convert(src: Path, dst: Path, watermark: str | None = WATERMARK) -> tuple[int, int, int]:
     with Image.open(src) as im:
         icc = im.info.get("icc_profile")
         im = ImageOps.exif_transpose(im).convert("RGB")
     w, h = im.size
     if w > MAX_WIDTH:
         im = im.resize((MAX_WIDTH, round(h * MAX_WIDTH / w)), Image.LANCZOS)
+    if watermark:
+        im = add_watermark(im, watermark)
     dst.parent.mkdir(parents=True, exist_ok=True)
     kwargs = {"quality": QUALITY, "optimize": True, "progressive": True}
     if icc:
@@ -246,7 +280,7 @@ def cmd_build(a) -> None:
     names = []
     for i, src in enumerate(files, 1):
         name = f"{i:02d}.jpg"
-        w, h, size = convert(src, dest / name)
+        w, h, size = convert(src, dest / name, None if a.no_watermark else a.watermark)
         names.append(name)
         print(f"  + {name}  {w}x{h}  {size // 1024}KB  ← {src.name}")
 
@@ -276,6 +310,8 @@ def main() -> None:
     b.add_argument("--pick", help="묶음 안에서 쓸 사진 순서(1부터), 예: 3,1,2")
     b.add_argument("--id", help="큐 번호(기본: 다음 번호)")
     b.add_argument("--force", action="store_true")
+    b.add_argument("--watermark", default=WATERMARK, help=f"사진 가운데 글씨(기본 {WATERMARK})")
+    b.add_argument("--no-watermark", action="store_true", help="워터마크 없이")
     a = ap.parse_args()
     load_env(a.env_file)
     if a.cmd == "scan":
