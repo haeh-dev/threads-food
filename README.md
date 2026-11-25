@@ -105,6 +105,21 @@ gh workflow run daily-post.yml --repo haeh-dev/threads-food
   공정위 심사지침상 부당광고가 될 수 있습니다(2026-06-01 시행 개정).
 - 써 보지 않은 쿠팡 상품은 후기처럼 쓰지 않습니다("집에서 비슷하게 먹고 싶다면" 정도로).
 
+## 실적 보기 (이 PC에서만)
+
+쿠팡파트너스 실적 API(클릭·주문·취소·수익)로 일별 실적을 봅니다. 실적은 매일 15:00에 갱신됩니다.
+**이 저장소는 공개라 Actions 로그도 공개되므로, 실적은 Actions에서 조회하지 않고 로컬에서만 봅니다.**
+
+```powershell
+python scripts/coupang_api.py report --days 7 --keys-file cupang.txt
+```
+```powershell
+python scripts/coupang_api.py report --days 30 --sub-id threads --keys-file cupang.txt
+```
+
+`--sub-id threads` 로 쓰레드에서 나온 실적만 따로 볼 수 있습니다. 키 파일은 첫 줄 Access Key, 둘째 줄 Secret Key이고
+커밋되지 않습니다.
+
 ## 알아둘 것
 
 - 큐에 있는 동안 사진과 글은 공개 저장소에서 보입니다. 위치 정보는 넣기 전에 지웁니다.

@@ -67,6 +67,13 @@ python scripts/validate_queue.py --show NNNN
 승인 없이 approved 를 true 로 두지 않는다(게시는 사용자 이름으로 공개되는 일이다).
 push 하면 `validate.yml` 이 같은 검사를 돌린다. `validate_queue.py` 로 남은 일수를 알려 준다.
 
+## 실적 보기
+```
+python scripts/coupang_api.py report --days 7 [--sub-id threads] --keys-file cupang.txt
+```
+로컬에서만 실행한다(공개 저장소라 Actions 로그가 공개된다. 코드도 Actions 에서는 거부한다). 실적은 매일 15:00 갱신.
+2026-11-25 기준선: 최근 30일 클릭 3회(subId 없음), 주문·수익 0.
+
 ## 하지 말 것
 - 키·토큰을 파일에 쓰지 않는다. 이 저장소는 공개다. 시크릿 등록은 사용자가 `gh secret set` 으로 직접 한다.
 - EXIF 를 지우지 않은 원본 사진을 커밋하지 않는다(`build` 를 거친 사진만 넣는다).
