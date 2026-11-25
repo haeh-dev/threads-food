@@ -20,6 +20,10 @@ on:
         description: "같은 내용의 내 답글이 있으면 새로 달고 옛것은 지우기(되돌릴 수 없음)"
         type: boolean
         default: false
+      old_reply_id:
+        description: "(선택) 교체할 옛 답글 ID — 답글 목록에 안 잡힐 때"
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -45,6 +49,7 @@ jobs:
           REPLY_TEXT: ${{ inputs.text }}
           DRY_RUN: ${{ inputs.dry_run }}
           REPLACE: ${{ inputs.replace }}
+          OLD_REPLY_ID: ${{ inputs.old_reply_id }}
         run: |
           args=(--post "$POST_URL")
           if [ "$DRY_RUN" = "true" ]; then args+=(--dry-run); fi

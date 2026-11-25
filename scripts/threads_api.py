@@ -169,6 +169,9 @@ class Threads:
         return self._call("GET", f"{self.user_id}/replies", limit=str(limit),
                           fields="id,text,username,timestamp,replied_to,root_post").get("data", [])
 
+    def media(self, media_id: str) -> dict:
+        return self._call("GET", media_id, fields="id,text,username,timestamp,permalink,replied_to,root_post")
+
     def delete(self, media_id: str) -> None:
         """내 게시물·답글을 지운다. threads_delete 권한이 필요하고 되돌릴 수 없다."""
         self._call("DELETE", media_id)

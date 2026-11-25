@@ -58,6 +58,8 @@ def main() -> None:
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--replace", action="store_true",
                     help="같은 내용의 내 답글이 있으면 새로 달고 옛것은 지운다(되돌릴 수 없음)")
+    ap.add_argument("--old-reply-id", default=os.environ.get("OLD_REPLY_ID") or None,
+                    help="목록에 안 잡히는 옛 답글 ID(--replace 와 함께)")
     a = ap.parse_args()
 
     text = (a.text if a.text is not None else os.environ.get("REPLY_TEXT", "")).replace("\r\n", "\n").strip()
@@ -105,6 +107,18 @@ def main() -> None:
             if a.replace:
                 sys.exit(f"기존 답글을 확인할 수 없어 교체하지 않는다: {e}")
             print(f"(기존 답글 확인 건너뜀: {e})")
+
+        if a.old_reply_id:
+            # 목록에 안 잡히는 옛 답글은 ID 로 직접 확인한다. 내 계정이 이 글에 단 답글일 때만 교체 대상으로 삼는다.
+            old = api.media(a.old_reply_id)
+            parent = (old.get("replied_to") or {}).get("id") or (old.get("root_post") or {}).get("id")
+            print(f"교체할 옛 답글: {old.get('id')} @{old.get('username')} 부모={parent} {old.get('permalink')}")
+            if old.get("username") != me.get("username"):
+                sys.exit("옛 답글이 내 계정 것이 아니라 멈춘다.")
+            if parent and parent != media["id"]:
+                sys.exit("옛 답글이 이 글에 단 것이 아니라 멈춘다.")
+            if all(r.get("id") != old.get("id") for r in same):
+                same.append(old)
 
         if same and not a.replace:
             print("같은 내용의 답글이 이미 있어 다시 달지 않는다(지우고 다시 달려면 --replace).")
