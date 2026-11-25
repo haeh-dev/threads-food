@@ -17,7 +17,7 @@ post.json 형식:
 - 사진은 1~10장, jpg/png, 장당 8MB 미만
 - 쿠팡 링크는 본문이 아니라 댓글에만 넣는다
 - 쿠팡 링크가 있는 댓글은 첫 줄이 대가성 문구여야 한다(공정위 심사지침, 첫 부분 표시)
-- 그 경우 본문에도 "쿠팡 파트너스" 안내를 넣는다(댓글에만 고지하면 인정되지 않는다는 해설이 있음)
+- 본문의 "쿠팡 파트너스" 안내 줄은 선택이다(필수 고지는 링크가 있는 댓글 첫 줄)
 - 본문에는 주제 태그를 달지 않는다. 본문의 첫 해시태그가 주제로 잡히므로 본문에 해시태그도 넣지 않는다
 - 쿠팡 링크 댓글에는 주제 태그 "광고" 를 자동으로 붙인다(대가성 문구를 대신하지는 않는다)
 - approved 가 true 인 글만 게시한다
@@ -43,7 +43,6 @@ POSTED = ROOT / "posted"
 DISCLOSURE = "이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다."
 AD_TOPIC = "광고"   # 쿠팡 링크 댓글에만 붙이는 주제 태그
 HASHTAG_RE = re.compile(r"(?<![\w&])#(?!\d+\b)[^\s#.&@!?,;:]+")
-BODY_NOTICE_KEYWORD = "쿠팡 파트너스"
 LINK_LIMIT = 5
 IMAGE_EXT = {".jpg", ".jpeg", ".png"}
 IMAGE_MAX_BYTES = 8 * 1024 * 1024
@@ -107,8 +106,8 @@ def validate(post: Post) -> list[str]:
         first_line = reply.strip().splitlines()[0].strip() if reply.strip() else ""
         if first_line != DISCLOSURE:
             errs.append("쿠팡 링크 댓글의 첫 줄은 대가성 문구여야 한다: " + DISCLOSURE)
-        if BODY_NOTICE_KEYWORD not in text:
-            errs.append(f"댓글에 쿠팡 링크가 있으면 본문에도 '{BODY_NOTICE_KEYWORD}' 안내를 넣는다")
+        # 본문의 "쿠팡 파트너스" 안내 줄은 선택이다(사용자 지시 2026-11-25: 본문은 간단하게).
+        # 링크가 있는 댓글 첫 줄의 대가성 문구가 공정위가 요구하는 '첫 부분 표시'다.
 
     imgs = post.images
     if not imgs:
