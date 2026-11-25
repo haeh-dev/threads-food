@@ -16,6 +16,10 @@ on:
         description: "게시하지 않고 점검만 하기"
         type: boolean
         default: true
+      replace:
+        description: "같은 내용의 내 답글이 있으면 새로 달고 옛것은 지우기(되돌릴 수 없음)"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -40,9 +44,9 @@ jobs:
           POST_URL: ${{ inputs.post_url }}
           REPLY_TEXT: ${{ inputs.text }}
           DRY_RUN: ${{ inputs.dry_run }}
+          REPLACE: ${{ inputs.replace }}
         run: |
-          if [ "$DRY_RUN" = "true" ]; then
-            python scripts/reply_to_post.py --post "$POST_URL" --dry-run
-          else
-            python scripts/reply_to_post.py --post "$POST_URL"
-          fi
+          args=(--post "$POST_URL")
+          if [ "$DRY_RUN" = "true" ]; then args+=(--dry-run); fi
+          if [ "$REPLACE" = "true" ]; then args+=(--replace); fi
+          python scripts/reply_to_post.py "${args[@]}"

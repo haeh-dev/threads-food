@@ -60,6 +60,8 @@ class Threads:
         url = f"{BASE}/{path.lstrip('/')}"
         if method == "GET":
             r = requests.get(url, params=params, timeout=self._timeout)
+        elif method == "DELETE":
+            r = requests.delete(url, params=params, timeout=self._timeout)
         else:
             r = requests.post(url, data=params, timeout=self._timeout)
         try:
@@ -161,6 +163,10 @@ class Threads:
     def replies(self, media_id: str) -> list[dict]:
         """게시물에 달린 답글. threads_read_replies 권한이 필요하다."""
         return self._call("GET", f"{media_id}/replies", fields="id,text,username").get("data", [])
+
+    def delete(self, media_id: str) -> None:
+        """내 게시물·답글을 지운다. threads_delete 권한이 필요하고 되돌릴 수 없다."""
+        self._call("DELETE", media_id)
 
     def permalink(self, media_id: str) -> str:
         try:

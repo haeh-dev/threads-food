@@ -56,6 +56,8 @@ def main() -> None:
     ap.add_argument("--post", required=True, help="내 쓰레드 글 주소 또는 /post/ 뒤 코드")
     ap.add_argument("--text", default=None)
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--replace", action="store_true",
+                    help="같은 내용의 내 답글이 있으면 새로 달고 옛것은 지운다(되돌릴 수 없음)")
     a = ap.parse_args()
 
     text = (a.text if a.text is not None else os.environ.get("REPLY_TEXT", "")).replace("\r\n", "\n").strip()
@@ -79,20 +81,32 @@ def main() -> None:
         for line in text.splitlines():
             print(f"  {line}")
 
+        same: list[dict] = []
         try:
             existing = api.replies(media["id"])
-            if any((r.get("text") or "").strip() == text for r in existing):
-                print("같은 내용의 답글이 이미 있어 다시 달지 않는다.")
-                return
+            same = [r for r in existing
+                    if (r.get("text") or "").strip() == text and r.get("username") == me.get("username")]
         except ThreadsError as e:
+            if a.replace:
+                sys.exit(f"기존 답글을 확인할 수 없어 교체하지 않는다: {e}")
             print(f"(기존 답글 확인 건너뜀: {e})")
 
+        if same and not a.replace:
+            print("같은 내용의 답글이 이미 있어 다시 달지 않는다(지우고 다시 달려면 --replace).")
+            return
         if a.dry_run:
-            print("점검 모드라 게시하지 않았다.")
+            plan = f"새 답글을 달고 기존 답글 {len(same)}개를 지울" if same else "새 답글을 달"
+            print(f"점검 모드라 게시하지 않았다({plan} 예정).")
             return
 
+        # 새 답글을 먼저 달고 나서 옛 답글을 지운다. 중간에 실패해도 댓글이 사라지지 않게.
         reply_id = api.reply(media["id"], text, topic)
         print(f"답글 게시 완료: {reply_id} {api.permalink(reply_id)}")
+        for r in same:
+            if r.get("id") == reply_id:
+                continue
+            api.delete(r["id"])
+            print(f"기존 답글 삭제: {r['id']}")
     except ThreadsError as e:
         sys.exit(f"실패: {e}")
 
