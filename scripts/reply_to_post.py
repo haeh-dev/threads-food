@@ -88,12 +88,7 @@ def main() -> None:
             existing = api.replies(media["id"])
             # 글의 답글 목록에 내 답글이 빠지는 경우가 있어, 내 답글 목록에서도 이 글에 단 것을 찾는다.
             seen = {r.get("id") for r in existing}
-            mine = api.my_replies()
-            print(f"(내 최근 답글 {len(mine)}개 중 이 글에 단 것을 찾는다)")
-            for r in mine[:5]:
-                print(f"    · {r.get('id')} 부모={(r.get('replied_to') or {}).get('id')} "
-                      f"루트={(r.get('root_post') or {}).get('id')} {(r.get('text') or '')[:20]!r}")
-            for r in mine:
+            for r in api.my_replies():
                 parent = (r.get("replied_to") or {}).get("id") or (r.get("root_post") or {}).get("id")
                 if parent == media["id"] and r.get("id") not in seen:
                     existing.append(r)
