@@ -110,6 +110,17 @@ class Threads:
         self.wait_ready(cid)
         return self._publish(cid)
 
+    def my_threads(self, limit: int = 50, after: str | None = None) -> dict:
+        """내 게시물 목록(최신순). paging.cursors.after 로 다음 쪽을 받는다."""
+        params = {"fields": "id,shortcode,permalink,timestamp,text", "limit": str(limit)}
+        if after:
+            params["after"] = after
+        return self._call("GET", f"{self.user_id}/threads", **params)
+
+    def replies(self, media_id: str) -> list[dict]:
+        """게시물에 달린 답글. threads_read_replies 권한이 필요하다."""
+        return self._call("GET", f"{media_id}/replies", fields="id,text,username").get("data", [])
+
     def permalink(self, media_id: str) -> str:
         try:
             return self._call("GET", media_id, fields="permalink").get("permalink", "")

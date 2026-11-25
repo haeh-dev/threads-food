@@ -1,0 +1,48 @@
+# 이미 올라간 내 쓰레드 글에 답글을 단다(예: 지난 글에 쿠팡 링크 댓글 추가).
+#   gh workflow run reply.yml -f post_url="https://www.threads.com/@계정/post/코드" -f text="$(cat reply.txt)" -f dry_run=false
+# 기본은 점검 모드(대상 글을 찾기만 하고 게시하지 않음)다.
+name: reply
+
+on:
+  workflow_dispatch:
+    inputs:
+      post_url:
+        description: "내 쓰레드 글 주소(…/post/코드)"
+        required: true
+      text:
+        description: "답글 내용(500자 이내, 쿠팡 링크가 있으면 첫 줄은 대가성 문구)"
+        required: true
+      dry_run:
+        description: "게시하지 않고 점검만 하기"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: reply
+  cancel-in-progress: false
+
+jobs:
+  reply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: 답글
+        env:
+          THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
+          POST_URL: ${{ inputs.post_url }}
+          REPLY_TEXT: ${{ inputs.text }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          if [ "$DRY_RUN" = "true" ]; then
+            python scripts/reply_to_post.py --post "$POST_URL" --dry-run
+          else
+            python scripts/reply_to_post.py --post "$POST_URL"
+          fi
