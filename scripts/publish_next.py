@@ -25,7 +25,7 @@ import sys
 
 import requests
 
-from queue_lib import POSTED, ROOT, load_queue
+from queue_lib import POSTED, ROOT, load_queue, reply_topic
 from threads_api import Threads, ThreadsError
 
 KST = dt.timezone(dt.timedelta(hours=9))
@@ -117,7 +117,7 @@ def main() -> None:
     api = Threads(token)
     try:
         if not post.state.get("media_id"):
-            post.state["media_id"] = api.post_photos(urls, post.text, post.data.get("topic") or None)
+            post.state["media_id"] = api.post_photos(urls, post.text)  # 본문에는 주제 태그를 달지 않는다
             post.state["posted_at"] = dt.datetime.now(KST).isoformat(timespec="seconds")
             save_state(post)
             summary(f"- 본문 게시 완료: {post.state['media_id']}")
@@ -125,7 +125,7 @@ def main() -> None:
             summary(f"- 본문은 이미 게시됨({post.state['media_id']}), 남은 단계만 한다")
 
         if post.reply and not post.state.get("reply_id"):
-            post.state["reply_id"] = api.reply(post.state["media_id"], post.reply)
+            post.state["reply_id"] = api.reply(post.state["media_id"], post.reply, reply_topic(post.reply))
             save_state(post)
             summary(f"- 댓글 게시 완료: {post.state['reply_id']}")
 

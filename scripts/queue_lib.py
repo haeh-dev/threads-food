@@ -8,7 +8,6 @@ post.json 형식:
   "text":   "쓰레드 본문, 500자 이내",
   "images": ["01.jpg", "02.jpg"],
   "reply":  "링크 댓글(없으면 null)",
-  "topic":  "주제 태그(선택, # 없이 1~50자, 예: 홍대맛집)",
   "approved": true,
   "note":   "내부 메모(게시되지 않음)"
 }
@@ -19,6 +18,8 @@ post.json 형식:
 - 쿠팡 링크는 본문이 아니라 댓글에만 넣는다
 - 쿠팡 링크가 있는 댓글은 첫 줄이 대가성 문구여야 한다(공정위 심사지침, 첫 부분 표시)
 - 그 경우 본문에도 "쿠팡 파트너스" 안내를 넣는다(댓글에만 고지하면 인정되지 않는다는 해설이 있음)
+- 본문에는 주제 태그를 달지 않는다. 본문의 첫 해시태그가 주제로 잡히므로 본문에 해시태그도 넣지 않는다
+- 쿠팡 링크 댓글에는 주제 태그 "광고" 를 자동으로 붙인다(대가성 문구를 대신하지는 않는다)
 - approved 가 true 인 글만 게시한다
 """
 from __future__ import annotations
@@ -28,13 +29,20 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from threads_api import CAROUSEL_LIMIT, TEXT_LIMIT, threads_len, topic_errors
+from threads_api import CAROUSEL_LIMIT, TEXT_LIMIT, threads_len
+
+
+def reply_topic(reply: str) -> str | None:
+    """쿠팡 링크가 있는 댓글에만 '광고' 주제 태그를 붙인다."""
+    return AD_TOPIC if COUPANG_RE.search(reply or "") else None
 
 ROOT = Path(__file__).resolve().parent.parent
 QUEUE = ROOT / "queue"
 POSTED = ROOT / "posted"
 
 DISCLOSURE = "이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다."
+AD_TOPIC = "광고"   # 쿠팡 링크 댓글에만 붙이는 주제 태그
+HASHTAG_RE = re.compile(r"(?<![\w&])#(?!\d+\b)[^\s#.&@!?,;:]+")
 BODY_NOTICE_KEYWORD = "쿠팡 파트너스"
 LINK_LIMIT = 5
 IMAGE_EXT = {".jpg", ".jpeg", ".png"}
@@ -83,9 +91,11 @@ def validate(post: Post) -> list[str]:
         errs.append(f"본문이 {threads_len(text)}자다(최대 {TEXT_LIMIT}, 이모지는 4자로 셈)")
     if threads_len(reply) > TEXT_LIMIT:
         errs.append(f"댓글이 {threads_len(reply)}자다(최대 {TEXT_LIMIT}, 이모지는 4자로 셈)")
-    topic = d.get("topic") or ""
-    if topic:
-        errs += topic_errors(topic)
+    if d.get("topic"):
+        errs.append("본문에는 주제 태그를 달지 않는다(topic 을 지울 것)")
+    tags = HASHTAG_RE.findall(text)
+    if tags:
+        errs.append(f"본문에 해시태그가 있으면 첫 태그가 주제로 잡힌다. 빼야 한다: {' '.join(tags)}")
     if len(URL_RE.findall(text)) > LINK_LIMIT:
         errs.append(f"본문 링크가 {LINK_LIMIT}개를 넘는다")
     if len(URL_RE.findall(reply)) > LINK_LIMIT:

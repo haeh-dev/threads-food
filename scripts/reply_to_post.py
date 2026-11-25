@@ -16,7 +16,7 @@ import os
 import re
 import sys
 
-from queue_lib import COUPANG_RE, DISCLOSURE, LINK_LIMIT, URL_RE
+from queue_lib import COUPANG_RE, DISCLOSURE, LINK_LIMIT, URL_RE, reply_topic
 from threads_api import TEXT_LIMIT, Threads, ThreadsError, threads_len
 
 
@@ -74,7 +74,8 @@ def main() -> None:
             sys.exit(f"@{me.get('username')} 의 최근 글에서 {code} 를 찾지 못했다. 다른 계정의 글이거나 주소가 틀렸다.")
         print(f"대상 글: @{me.get('username')} {media.get('permalink')} ({media.get('timestamp')})")
         print("  " + (media.get("text") or "").splitlines()[0][:60])
-        print("답글:")
+        topic = reply_topic(text)
+        print(f"답글(주제 태그: {topic or '없음'}):")
         for line in text.splitlines():
             print(f"  {line}")
 
@@ -90,7 +91,7 @@ def main() -> None:
             print("점검 모드라 게시하지 않았다.")
             return
 
-        reply_id = api.reply(media["id"], text)
+        reply_id = api.reply(media["id"], text, topic)
         print(f"답글 게시 완료: {reply_id} {api.permalink(reply_id)}")
     except ThreadsError as e:
         sys.exit(f"실패: {e}")

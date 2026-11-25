@@ -134,9 +134,20 @@ class Threads:
         self.wait_ready(cid)
         return self._publish(cid)
 
-    def reply(self, media_id: str, text: str) -> str:
-        """내 게시물에 텍스트 답글을 단다. threads_manage_replies 권한이 필요하다."""
-        cid = self._create(media_type="TEXT", text=text, reply_to_id=media_id)
+    def reply(self, media_id: str, text: str, topic_tag: str | None = None) -> str:
+        """내 게시물에 텍스트 답글을 단다. threads_manage_replies 권한이 필요하다.
+
+        topic_tag 를 주면 답글에 주제 태그를 붙인다. 문서에 답글의 주제 태그 규정이 없어서,
+        주제 태그 때문에 거절되면 태그 없이 한 번 더 시도하고 경고를 남긴다.
+        """
+        if topic_tag:
+            try:
+                cid = self._create(media_type="TEXT", text=text, reply_to_id=media_id, topic_tag=topic_tag)
+            except ThreadsError as e:
+                print(f"경고: 주제 태그 '{topic_tag}' 를 붙인 답글이 거절돼 태그 없이 다시 시도한다: {e}")
+                cid = self._create(media_type="TEXT", text=text, reply_to_id=media_id)
+        else:
+            cid = self._create(media_type="TEXT", text=text, reply_to_id=media_id)
         self.wait_ready(cid)
         return self._publish(cid)
 

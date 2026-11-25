@@ -11,7 +11,7 @@ from __future__ import annotations
 import argparse
 import sys
 
-from queue_lib import load_queue
+from queue_lib import load_queue, reply_topic
 from threads_api import threads_len
 
 
@@ -22,8 +22,8 @@ def show(post) -> None:
         print("\n  └ 댓글")
         for line in post.reply.splitlines():
             print(f"    {line}")
-    topic = post.data.get("topic") or "(없음)"
-    print(f"\n  주제 태그 {topic} / 본문 {threads_len(post.text)}자 / 댓글 {threads_len(post.reply)}자"
+    topic = reply_topic(post.reply) or "없음"
+    print(f"\n  본문 {threads_len(post.text)}자(주제 태그 없음) / 댓글 {threads_len(post.reply)}자(주제 태그: {topic})"
           f" / 승인 {'예' if post.approved else '아니오'}")
 
 
