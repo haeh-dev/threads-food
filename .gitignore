@@ -11,6 +11,16 @@ coupang.txt
 # 사진 묶기 중간 결과(원본 경로가 들어 있음)
 work/
 
+# 원본 사진(위치 정보가 들어 있다). 큐에는 build 를 거친 queue/NNNN/*.jpg 만 들어간다.
+/*.heic
+/*.HEIC
+/*.heif
+/*.jpg
+/*.JPG
+/*.jpeg
+/*.png
+/photos/
+
 # 마지막 게시 표시(워크플로 안에서만 씀)
 .last_posted
 
