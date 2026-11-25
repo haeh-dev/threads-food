@@ -253,7 +253,7 @@ def cmd_build(a) -> None:
     pj = dest / "post.json"
     if not pj.exists():
         skeleton = {"store": "", "area": area, "text": "", "images": names,
-                    "reply": None, "approved": False, "note": ""}
+                    "reply": None, "topic": "", "approved": False, "note": ""}
         pj.write_text(json.dumps(skeleton, ensure_ascii=False, indent=2), encoding="utf-8")
     else:
         data = json.loads(pj.read_text(encoding="utf-8"))

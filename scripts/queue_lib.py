@@ -8,6 +8,7 @@ post.json 형식:
   "text":   "쓰레드 본문, 500자 이내",
   "images": ["01.jpg", "02.jpg"],
   "reply":  "링크 댓글(없으면 null)",
+  "topic":  "주제 태그(선택, # 없이 1~50자, 예: 홍대맛집)",
   "approved": true,
   "note":   "내부 메모(게시되지 않음)"
 }
@@ -27,7 +28,7 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from threads_api import CAROUSEL_LIMIT, TEXT_LIMIT
+from threads_api import CAROUSEL_LIMIT, TEXT_LIMIT, threads_len, topic_errors
 
 ROOT = Path(__file__).resolve().parent.parent
 QUEUE = ROOT / "queue"
@@ -78,10 +79,13 @@ def validate(post: Post) -> list[str]:
 
     if not text.strip():
         errs.append("본문(text)이 비어 있다")
-    if len(text) > TEXT_LIMIT:
-        errs.append(f"본문이 {len(text)}자다(최대 {TEXT_LIMIT})")
-    if len(reply) > TEXT_LIMIT:
-        errs.append(f"댓글이 {len(reply)}자다(최대 {TEXT_LIMIT})")
+    if threads_len(text) > TEXT_LIMIT:
+        errs.append(f"본문이 {threads_len(text)}자다(최대 {TEXT_LIMIT}, 이모지는 4자로 셈)")
+    if threads_len(reply) > TEXT_LIMIT:
+        errs.append(f"댓글이 {threads_len(reply)}자다(최대 {TEXT_LIMIT}, 이모지는 4자로 셈)")
+    topic = d.get("topic") or ""
+    if topic:
+        errs += topic_errors(topic)
     if len(URL_RE.findall(text)) > LINK_LIMIT:
         errs.append(f"본문 링크가 {LINK_LIMIT}개를 넘는다")
     if len(URL_RE.findall(reply)) > LINK_LIMIT:

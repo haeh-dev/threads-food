@@ -12,6 +12,7 @@ import argparse
 import sys
 
 from queue_lib import load_queue
+from threads_api import threads_len
 
 
 def show(post) -> None:
@@ -21,7 +22,9 @@ def show(post) -> None:
         print("\n  └ 댓글")
         for line in post.reply.splitlines():
             print(f"    {line}")
-    print(f"\n  본문 {len(post.text)}자 / 댓글 {len(post.reply)}자 / 승인 {'예' if post.approved else '아니오'}")
+    topic = post.data.get("topic") or "(없음)"
+    print(f"\n  주제 태그 {topic} / 본문 {threads_len(post.text)}자 / 댓글 {threads_len(post.reply)}자"
+          f" / 승인 {'예' if post.approved else '아니오'}")
 
 
 def main() -> None:

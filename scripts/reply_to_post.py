@@ -17,7 +17,7 @@ import re
 import sys
 
 from queue_lib import COUPANG_RE, DISCLOSURE, LINK_LIMIT, URL_RE
-from threads_api import TEXT_LIMIT, Threads, ThreadsError
+from threads_api import TEXT_LIMIT, Threads, ThreadsError, threads_len
 
 
 def shortcode_of(s: str) -> str:
@@ -29,8 +29,8 @@ def check_text(text: str) -> list[str]:
     errs = []
     if not text.strip():
         errs.append("답글이 비어 있다")
-    if len(text) > TEXT_LIMIT:
-        errs.append(f"답글이 {len(text)}자다(최대 {TEXT_LIMIT})")
+    if threads_len(text) > TEXT_LIMIT:
+        errs.append(f"답글이 {threads_len(text)}자다(최대 {TEXT_LIMIT}, 이모지는 4자로 셈)")
     if len(URL_RE.findall(text)) > LINK_LIMIT:
         errs.append(f"링크가 {LINK_LIMIT}개를 넘는다")
     if COUPANG_RE.search(text) and text.strip().splitlines()[0].strip() != DISCLOSURE:

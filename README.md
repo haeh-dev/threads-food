@@ -28,7 +28,8 @@ queue/ 에서 가장 앞선 승인 글 1편
 | `scripts/validate_queue.py` | 큐 검사·미리보기 |
 | `scripts/publish_next.py` | 1편 게시(워크플로가 실행) |
 | `scripts/coupang_api.py` | 쿠팡 상품 검색·딥링크 |
-| `.github/workflows/` | 매일 게시, 규칙 검사, 쿠팡 링크, 토큰 갱신 |
+| `scripts/reply_to_post.py` | 이미 올라간 내 글에 답글 달기(`reply.yml` 이 실행) |
+| `.github/workflows/` | 매일 게시, 규칙 검사, 쿠팡 링크, 지난 글 답글, 토큰 갱신 |
 
 ## 처음 한 번 할 설정
 
@@ -94,7 +95,8 @@ gh workflow run daily-post.yml --repo haeh-dev/threads-food
 
 `validate_queue.py` 가 push 때마다 검사하고, 어긋나면 게시하지 않습니다.
 
-- 본문·댓글 각 500자, 링크 각 5개 이하 / 사진 1~10장
+- 본문·댓글 각 500자(이모지는 4자로 셈), 링크 각 5개 이하 / 사진 1~10장
+- 주제 태그(`topic`)는 글당 하나, `#` 없이 1~50자, 마침표·앰퍼샌드 불가. 붙이면 그 주제 피드에 노출됩니다
 - 쿠팡 링크는 **댓글에만**, 댓글 **첫 줄은 대가성 문구**
   「이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.」
 - 쿠팡 링크 댓글이 있으면 본문에도 "쿠팡 파트너스" 안내

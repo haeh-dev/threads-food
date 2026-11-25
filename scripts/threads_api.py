@@ -17,11 +17,33 @@ import requests
 
 BASE = "https://graph.threads.net/v1.0"
 TEXT_LIMIT = 500        # 게시물 본문 최대 글자 수
-CAROUSEL_LIMIT = 10     # 이 저장소에서 쓰는 캐러셀 최대 장수(보수적으로 잡음)
+CAROUSEL_LIMIT = 10     # 이 저장소에서 쓰는 캐러셀 최대 장수(문서상 20장, 보수적으로 잡음)
+TOPIC_MAX = 50          # 주제 태그 1~50자, 마침표(.)·앰퍼샌드(&) 불가
 
 
 class ThreadsError(RuntimeError):
     pass
+
+
+def _is_emoji(ch: str) -> bool:
+    cp = ord(ch)
+    return cp >= 0x1F000 or 0x2600 <= cp <= 0x27BF or cp in (0x200D, 0xFE0F) or 0x2B00 <= cp <= 0x2BFF
+
+
+def threads_len(text: str) -> int:
+    """Threads 글자 수. 문서상 이모지는 UTF-8 바이트 수로 센다(🐟 = 4자)."""
+    return sum(len(ch.encode("utf-8")) if _is_emoji(ch) else 1 for ch in text)
+
+
+def topic_errors(topic: str) -> list[str]:
+    errs = []
+    if not 1 <= len(topic) <= TOPIC_MAX:
+        errs.append(f"주제 태그는 1~{TOPIC_MAX}자다(지금 {len(topic)}자)")
+    if "." in topic or "&" in topic:
+        errs.append("주제 태그에는 마침표(.)와 앰퍼샌드(&)를 쓸 수 없다")
+    if topic.startswith("#"):
+        errs.append("주제 태그에는 # 을 붙이지 않는다")
+    return errs
 
 
 class Threads:
@@ -85,22 +107,30 @@ class Threads:
         return self._call("POST", f"{self.user_id}/threads_publish", creation_id=container_id)["id"]
 
     # ── 고수준 ──────────────────────────────────────────────
-    def post_photos(self, image_urls: list[str], text: str) -> str:
-        """사진 1장이면 단일 이미지, 2장 이상이면 캐러셀로 올리고 게시물 ID 를 돌려준다."""
+    def post_photos(self, image_urls: list[str], text: str, topic_tag: str | None = None) -> str:
+        """사진 1장이면 단일 이미지, 2장 이상이면 캐러셀로 올리고 게시물 ID 를 돌려준다.
+
+        topic_tag 를 주면 그 주제 피드에 글이 노출된다. 글당 하나이고, 본문·캐러셀 부모 컨테이너에 붙인다.
+        """
         if not image_urls:
             raise ThreadsError("사진이 없다.")
         if len(image_urls) > CAROUSEL_LIMIT:
             raise ThreadsError(f"사진은 최대 {CAROUSEL_LIMIT}장이다(지금 {len(image_urls)}장).")
+        extra = {}
+        if topic_tag:
+            if topic_errors(topic_tag):
+                raise ThreadsError("; ".join(topic_errors(topic_tag)))
+            extra["topic_tag"] = topic_tag
 
         if len(image_urls) == 1:
-            cid = self._create(media_type="IMAGE", image_url=image_urls[0], text=text)
+            cid = self._create(media_type="IMAGE", image_url=image_urls[0], text=text, **extra)
         else:
             children = []
             for url in image_urls:
                 item = self._create(media_type="IMAGE", image_url=url, is_carousel_item="true")
                 self.wait_ready(item)
                 children.append(item)
-            cid = self._create(media_type="CAROUSEL", children=",".join(children), text=text)
+            cid = self._create(media_type="CAROUSEL", children=",".join(children), text=text, **extra)
         self.wait_ready(cid)
         return self._publish(cid)
 

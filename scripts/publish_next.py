@@ -117,7 +117,7 @@ def main() -> None:
     api = Threads(token)
     try:
         if not post.state.get("media_id"):
-            post.state["media_id"] = api.post_photos(urls, post.text)
+            post.state["media_id"] = api.post_photos(urls, post.text, post.data.get("topic") or None)
             post.state["posted_at"] = dt.datetime.now(KST).isoformat(timespec="seconds")
             save_state(post)
             summary(f"- 본문 게시 완료: {post.state['media_id']}")
