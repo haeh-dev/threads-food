@@ -84,6 +84,10 @@ def main() -> None:
         same: list[dict] = []
         try:
             existing = api.replies(media["id"])
+            print(f"기존 답글 {len(existing)}개:")
+            for r in existing:
+                first = (r.get("text") or "").strip().replace("\n", " / ")[:50]
+                print(f"  - {r.get('id')} @{r.get('username')} {first!r}")
             same = [r for r in existing
                     if (r.get("text") or "").strip() == text and r.get("username") == me.get("username")]
         except ThreadsError as e:
