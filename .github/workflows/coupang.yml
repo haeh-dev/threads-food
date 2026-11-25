@@ -1,0 +1,51 @@
+# 쿠팡파트너스 상품 검색과 딥링크 생성. 글을 쓸 때 수동으로 실행한다.
+#   gh workflow run coupang.yml -f mode=search -f query="곱창 밀키트"
+#   gh workflow run coupang.yml -f mode=link -f query="1234567890,https://www.coupang.com/vp/products/987"
+# 결과는 실행 로그와 요약(Summary)에 JSON 으로 남는다. 공개 저장소라 로그도 공개된다(링크·상품명만 나온다).
+name: coupang
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "search(상품 검색) 또는 link(딥링크 생성)"
+        type: choice
+        options: [search, link]
+        default: search
+      query:
+        description: "검색어, 또는 쉼표로 이은 상품 ID/URL"
+        required: true
+      limit:
+        description: "검색 결과 개수"
+        default: "5"
+      sub_id:
+        description: "채널 구분용 subId"
+        default: "threads"
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: 실행
+        env:
+          COUPANG_ACCESS_KEY: ${{ secrets.COUPANG_ACCESS_KEY }}
+          COUPANG_SECRET_KEY: ${{ secrets.COUPANG_SECRET_KEY }}
+          MODE: ${{ inputs.mode }}
+          QUERY: ${{ inputs.query }}
+          LIMIT: ${{ inputs.limit }}
+          SUB_ID: ${{ inputs.sub_id }}
+        run: |
+          if [ "$MODE" = "search" ]; then
+            python scripts/coupang_api.py search "$QUERY" --limit "$LIMIT" --sub-id "$SUB_ID"
+          else
+            python scripts/coupang_api.py link "$QUERY" --sub-id "$SUB_ID"
+          fi

@@ -1,0 +1,67 @@
+# 매일 큐에서 승인된 글 1편을 쓰레드에 올린다.
+# 수동 실행(workflow_dispatch)은 기본이 점검 모드다. 실제로 올리려면 dry_run 을 끈다.
+name: daily-post
+
+on:
+  schedule:
+    - cron: "23 3 * * *"   # 매일 12:23 KST. GitHub 예약 실행은 몇 분~수십 분 늦을 수 있다.
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "게시하지 않고 점검만 하기"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-post
+  cancel-in-progress: false
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install -r requirements.txt
+
+      - name: 모드 결정
+        id: mode
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.dry_run }}" = "true" ]; then
+            echo "dry=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "dry=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: 게시
+        env:
+          THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
+        run: |
+          if [ "${{ steps.mode.outputs.dry }}" = "true" ]; then
+            python scripts/publish_next.py --dry-run
+          else
+            python scripts/publish_next.py
+          fi
+
+      # 실패해도 단계별 기록(state.json)은 남겨야 같은 글이 두 번 올라가지 않는다.
+      - name: 기록 커밋
+        if: always() && steps.mode.outputs.dry == 'false'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A queue posted
+          if git diff --cached --quiet; then
+            echo "바뀐 것 없음"
+            exit 0
+          fi
+          msg="게시: $(cat .last_posted 2>/dev/null || echo '진행 기록')"
+          git commit -m "$msg"
+          git push
