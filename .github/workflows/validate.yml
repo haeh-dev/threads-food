@@ -5,6 +5,7 @@ on:
   push:
     paths:
       - "queue/**"
+      - "chat/**"
       - "scripts/**"
   pull_request:
   workflow_dispatch:
@@ -23,3 +24,4 @@ jobs:
           python-version: "3.12"
       - run: pip install -r requirements.txt
       - run: python scripts/validate_queue.py
+      - run: python scripts/chat_post.py --check

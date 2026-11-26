@@ -29,6 +29,7 @@ queue/ 에서 가장 앞선 승인 글 1편
 | `scripts/publish_next.py` | 1편 게시(워크플로가 실행) |
 | `scripts/coupang_api.py` | 쿠팡 상품 검색·딥링크 |
 | `scripts/reply_to_post.py` | 이미 올라간 내 글에 답글 달기(`reply.yml` 이 실행) |
+| `chat/pool.json`, `scripts/chat_post.py` | 일상 대화 글 목록과 매일 1편 게시(`chat-post.yml`, 09~22시 무작위) |
 | `.github/workflows/` | 매일 게시, 규칙 검사, 쿠팡 링크, 지난 글 답글, 토큰 갱신 |
 
 ## 처음 한 번 할 설정

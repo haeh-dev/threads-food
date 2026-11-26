@@ -136,6 +136,12 @@ class Threads:
         self.wait_ready(cid)
         return self._publish(cid)
 
+    def post_text(self, text: str) -> str:
+        """사진 없는 텍스트 글을 올리고 게시물 ID 를 돌려준다(일상 대화 글용, 주제 태그 없음)."""
+        cid = self._create(media_type="TEXT", text=text)
+        self.wait_ready(cid)
+        return self._publish(cid)
+
     def reply(self, media_id: str, text: str, topic_tag: str | None = None) -> str:
         """내 게시물에 텍스트 답글을 단다. threads_manage_replies 권한이 필요하다.
 

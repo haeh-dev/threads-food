@@ -1,0 +1,71 @@
+# 하루 한 번, 그날의 무작위 시각(09~22시 KST)이 지나면 일상 대화 글 1편을 올린다.
+# 매시 41분에 돌고, 시각이 안 됐거나 오늘 이미 올렸으면 아무것도 하지 않는다.
+# 수동 실행은 기본이 점검 모드다. force 를 켜면 예정 시각을 무시하고 지금 올린다.
+name: chat-post
+
+on:
+  schedule:
+    - cron: "41 0-13 * * *"   # 09:41~22:41 KST 매시
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "게시하지 않고 점검만 하기"
+        type: boolean
+        default: true
+      force:
+        description: "예정 시각을 무시하고 지금 올리기"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: repo-write
+  cancel-in-progress: false
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install -r requirements.txt
+
+      - name: 모드 결정
+        id: mode
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.dry_run }}" = "true" ]; then
+            echo "dry=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "dry=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: 대화 글 게시
+        env:
+          THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
+          FORCE: ${{ github.event_name == 'workflow_dispatch' && inputs.force || 'false' }}
+        run: |
+          args=()
+          if [ "${{ steps.mode.outputs.dry }}" = "true" ]; then args+=(--dry-run); fi
+          if [ "$FORCE" = "true" ]; then args+=(--force); fi
+          python scripts/chat_post.py "${args[@]}"
+
+      - name: 기록 커밋
+        if: always() && steps.mode.outputs.dry == 'false'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A chat
+          if git diff --cached --quiet; then
+            echo "바뀐 것 없음"
+            exit 0
+          fi
+          git commit -m "대화 글 게시 기록"
+          git pull --rebase
+          git push

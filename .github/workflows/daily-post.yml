@@ -16,7 +16,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: daily-post
+  group: repo-write   # chat-post 와 같은 그룹: 저장소에 동시에 push 하지 않게
   cancel-in-progress: false
 
 jobs:
@@ -64,4 +64,5 @@ jobs:
           fi
           msg="게시: $(cat .last_posted 2>/dev/null || echo '진행 기록')"
           git commit -m "$msg"
+          git pull --rebase
           git push

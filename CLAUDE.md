@@ -67,6 +67,13 @@ python scripts/validate_queue.py --show NNNN
 승인 없이 approved 를 true 로 두지 않는다(게시는 사용자 이름으로 공개되는 일이다).
 push 하면 `validate.yml` 이 같은 검사를 돌린다. `validate_queue.py` 로 남은 일수를 알려 준다.
 
+## 일상 대화 글 (사용자 지시 2026-11-26)
+매일 09~22시 무작위 시각에 맛집·여행 질문 글 1편을 `chat-post.yml` 이 올린다(맛집 글 시간대 11:30~13:30 제외).
+- 목록: `chat/pool.json` (맛집 15, 여행 15로 시작. 카페는 사용자가 빼라고 함). 기록: `chat/posted.json`.
+- 목록 전체를 사용자에게 승인받아 `"approved": true` 일 때만 올린다. 새 글을 더할 때도 목록을 보여 주고 승인받는다.
+- 글은 짧은 반말 질문. 링크·해시태그·이모지·토픽 없음. 계정 주인의 경험이나 취향을 지어내지 않는다(묻는 형태로만).
+- 남은 글 확인: `python scripts/chat_post.py --check`. 7편 이하로 줄면 새 글을 제안한다.
+
 ## 실적 보기
 ```
 python scripts/coupang_api.py report --days 7 [--sub-id threads] --keys-file cupang.txt
